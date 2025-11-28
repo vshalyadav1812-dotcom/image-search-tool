@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Search</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+
+        .results {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .card img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .card p {
+            font-size: 0.8em;
+            color: #666;
+            word-break: break-all;
+        }
+
+        input[type="text"] {
+            padding: 8px;
+            width: 60%;
+        }
+
+        button {
+            padding: 8px 15px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .loading {
+            color: #666;
+            font-style: italic;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>AI Image Search Tool</h1>
+
+    <div class="controls">
+        <h3>1. Index Images</h3>
+        <input type="text" id="indexDir" placeholder="Enter absolute path to image folder (e.g., C:/Images)">
+        <button onclick="indexImages()">Index Directory</button>
+        <span id="indexStatus"></span>
+    </div>
+
+    <div class="controls">
+        <h3>2. Search by Text</h3>
+        <input type="text" id="searchQuery" placeholder="Search (e.g., 'cat', 'receipt', 'invoice #123')">
+        <button onclick="searchImages()">Search</button>
+    </div>
+
+    <div class="controls">
+        <h3>3. Search by Image</h3>
+        <input type="file" id="imageInput" accept="image/*">
+        <button onclick="searchByImage()">Search Image</button>
+    </div>
+
+    <div id="loading" class="loading">Processing...</div>
+    <div id="results" class="results"></div>
+
+    <script>
+        async function indexImages() {
+            const dir = document.getElementById('indexDir').value;
+            const status = document.getElementById('indexStatus');
+
+            if (!dir) { alert('Please enter a directory path'); return; }
+
+            status.textContent = 'Starting...';
+
+            try {
+                const res = await fetch('/index', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ directory: dir })
+                });
+                const data = await res.json();
+                status.textContent = data.message;
+
+                // Start polling
+                pollStatus();
+            } catch (e) {
+                status.textContent = 'Error: ' + e;
+            }
+        }
+
+        async function pollStatus() {
+            const status = document.getElementById('indexStatus');
+            const interval = setInterval(async () => {
+                try {
+                    const res = await fetch('/status');
+                    const data = await res.json();
+
+                    if (data.is_indexing) {
+                        status.textContent = `Indexing... (Current count: ${data.image_count})`;
+                    } else {
+                        status.textContent = `Indexing complete. Total images: ${data.image_count}`;
+                        clearInterval(interval);
+                    }
+                } catch (e) {
+                    console.error("Polling error", e);
+                    clearInterval(interval);
+                }
+            }, 1000);
+        }
+
+        async function searchImages() {
+            const query = document.getElementById('searchQuery').value;
+            const resultsDiv = document.getElementById('results');
+            const loading = document.getElementById('loading');
+
+            if (!query) { alert('Please enter a search query'); return; }
+
+            loading.style.display = 'block';
+            resultsDiv.innerHTML = '';
+
+            try {
+                const res = await fetch(`/search?query=${encodeURIComponent(query)}`);
+                const data = await res.json();
+
+                if (data.results && data.results.length > 0) {
+                    data.results.forEach(item => {
+                        const card = document.createElement('div');
+                        card.className = 'card';
+                        const imgUrl = `/image?path=${encodeURIComponent(item.path)}`;
+                        card.innerHTML = `
+                            <img src="${imgUrl}" alt="Result">
+                            <p>Score: ${item.score.toFixed(4)}</p>
+                            <p title="${item.path}">${item.path.split(/[\\/]/).pop()}</p>
+                        `;
+                        resultsDiv.appendChild(card);
+                    });
+                } else {
+                    resultsDiv.innerHTML = '<p>No results found.</p>';
+                }
+            } catch (e) {
+                resultsDiv.innerHTML = '<p>Error searching.</p>';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        async function searchByImage() {
+            const fileInput = document.getElementById('imageInput');
+            const resultsDiv = document.getElementById('results');
+            const loading = document.getElementById('loading');
+
+            if (fileInput.files.length === 0) { alert('Please select an image'); return; }
+
+            loading.style.display = 'block';
+            resultsDiv.innerHTML = '';
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                const res = await fetch('/search_image', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+
+                if (data.results && data.results.length > 0) {
+                    data.results.forEach(item => {
+                        const card = document.createElement('div');
+                        card.className = 'card';
+                        const imgUrl = `/image?path=${encodeURIComponent(item.path)}`;
+                        card.innerHTML = `
+                            <img src="${imgUrl}" alt="Result">
+                            <p>Score: ${item.score.toFixed(4)}</p>
+                            <p title="${item.path}">${item.path.split(/[\\/]/).pop()}</p>
+                        `;
+                        resultsDiv.appendChild(card);
+                    });
+                } else {
+                    resultsDiv.innerHTML = '<p>No results found.</p>';
+                }
+            } catch (e) {
+                resultsDiv.innerHTML = '<p>Error searching by image.</p>';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+
+</html>
