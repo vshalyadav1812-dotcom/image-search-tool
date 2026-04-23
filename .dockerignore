@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+image_index.pt
+image_index.pt.json
+.git/
+.env
