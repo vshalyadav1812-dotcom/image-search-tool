@@ -20,7 +20,6 @@ is_indexing = False
 
 def background_index_task(directory: str):
     global is_indexing
-    is_indexing = True
     try:
         engine.index_directory(directory)
     except Exception as e:
@@ -37,6 +36,7 @@ async def index_images(request: IndexRequest, background_tasks: BackgroundTasks)
     if not os.path.isdir(request.directory):
         raise HTTPException(status_code=400, detail="Directory not found")
     
+    is_indexing = True
     background_tasks.add_task(background_index_task, request.directory)
     return {"message": "Indexing started in background."}
 
@@ -44,7 +44,7 @@ async def index_images(request: IndexRequest, background_tasks: BackgroundTasks)
 async def get_status():
     return {
         "is_indexing": is_indexing,
-        "image_count": len(engine.image_paths)
+        "image_count": engine.indexing_count if is_indexing else len(engine.image_paths)
     }
 
 @app.get("/search")
@@ -59,7 +59,7 @@ async def search(query: str = Query(..., min_length=1)):
 async def search_image(file: UploadFile = File(...)):
     try:
         contents = await file.read()
-        image = Image.open(io.BytesIO(contents))
+        image = Image.open(io.BytesIO(contents)).convert('RGB')
         results = engine.search_by_image(image)
         return {"results": results}
     except Exception as e:

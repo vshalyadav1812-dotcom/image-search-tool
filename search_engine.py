@@ -16,6 +16,7 @@ class ImageSearchEngine:
         self.embeddings = None
         self.ocr_service = OCRService()
         self.ocr_texts = [] # Store OCR text for text-based fallback or hybrid search
+        self.indexing_count = 0 # Track progress during background indexing
         self.load_index()
 
     def save_index(self):
@@ -36,8 +37,8 @@ class ImageSearchEngine:
                 self.embeddings = torch.load(self.index_path)
                 with open(self.index_path + ".json", 'r') as f:
                     data = json.load(f)
-                    self.image_paths = data["image_paths"]
-                    self.ocr_texts = data["ocr_texts"]
+                    self.image_paths = data.get("image_paths", [])
+                    self.ocr_texts = data.get("ocr_texts", [""] * len(self.image_paths))
                 print(f"Index loaded. {len(self.image_paths)} images.")
                 return True
             except Exception as e:
@@ -48,21 +49,26 @@ class ImageSearchEngine:
         """
         Scans a directory for images, generates embeddings, and extracts text.
         """
-        extensions = ['*.jpg', '*.jpeg', '*.png', '*.bmp', '*.gif', '*.tif', '*.tiff', '*.webp', '*.wemp']
+        extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.gif', '.tif', '.tiff', '.webp', '.wemp'}
         raw_paths = []
-        for ext in extensions:
-            raw_paths.extend(glob.glob(os.path.join(directory_path, ext)))
+        for root, dirs, files in os.walk(directory_path):
+            for file in files:
+                ext = os.path.splitext(file)[1].lower()
+                if ext in extensions:
+                    raw_paths.append(os.path.join(root, file))
         
         print(f"Found {len(raw_paths)} potential images. Indexing...")
         
         images = []
-        self.image_paths = [] # Reset and only store valid paths
-        self.ocr_texts = []
+        new_image_paths = []
+        new_ocr_texts = []
+        self.indexing_count = 0
         
         for img_path in raw_paths:
             try:
                 img = Image.open(img_path)
-                # Force load to ensure it's valid
+                # Force load and convert RGB to ensure it's valid and avoids alpha channel issues
+                img = img.convert('RGB')
                 img.load()
                 
                 # Extract text for potential text search
@@ -70,17 +76,23 @@ class ImageSearchEngine:
                 
                 # Only append if everything succeeded
                 images.append(img)
-                self.image_paths.append(img_path)
-                self.ocr_texts.append(text)
+                new_image_paths.append(img_path)
+                new_ocr_texts.append(text)
+                self.indexing_count = len(new_image_paths)
             except Exception as e:
                 print(f"Error loading {img_path}: {e}")
 
         if images:
-            self.embeddings = self.model.encode(images, convert_to_tensor=True)
+            new_embeddings = self.model.encode(images, convert_to_tensor=True)
+            self.image_paths = new_image_paths
+            self.ocr_texts = new_ocr_texts
+            self.embeddings = new_embeddings
+            
             print(f"Indexing complete. {len(self.image_paths)} valid images indexed.")
             self.save_index()
         else:
             print("No valid images found to index.")
+            self.indexing_count = 0
 
     def search(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
         """
