@@ -6,3 +6,5 @@ python-multipart
 sentence-transformers
 torch
 numpy
+chromadb
+pillow-heif

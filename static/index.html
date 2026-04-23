@@ -1,119 +1,319 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Image Search</title>
+    <title>AI Image Search - Premium</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.7);
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
-            font-family: sans-serif;
-            max-width: 800px;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            padding: 40px 20px;
+            background-image: radial-gradient(circle at top right, #1e1b4b 0%, var(--bg-color) 40%);
+            background-attachment: fixed;
+        }
+
+        .container {
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
         }
 
-        .controls {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #f5f5f5;
-            border-radius: 8px;
+        h1 {
+            font-weight: 800;
+            font-size: 3rem;
+            margin-bottom: 40px;
+            text-align: center;
+            background: -webkit-linear-gradient(45deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        .results {
+        .controls-wrapper {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 20px;
+            margin-bottom: 40px;
         }
 
-        .card {
-            border: 1px solid #ddd;
-            padding: 10px;
-            border-radius: 4px;
+        .panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s, box-shadow 0.2s;
         }
 
-        .card img {
-            max-width: 100%;
-            height: auto;
+        .panel:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .panel h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #e2e8f0;
+        }
+
+        input[type="text"], input[type="number"], input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            margin-bottom: 16px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus {
+            border-color: var(--accent);
+        }
+
+        .options-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .options-row > div {
+            flex: 1;
+        }
+        
+        .options-row label {
             display: block;
-        }
-
-        .card p {
-            font-size: 0.8em;
-            color: #666;
-            word-break: break-all;
-        }
-
-        input[type="text"] {
-            padding: 8px;
-            width: 60%;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
         }
 
         button {
-            padding: 8px 15px;
-            cursor: pointer;
-            background: #007bff;
+            width: 100%;
+            padding: 12px;
+            background: var(--accent);
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
         }
 
         button:hover {
-            background: #0056b3;
+            background: var(--accent-hover);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .checkbox-container input {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .status-text {
+            display: block;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #94a3b8;
+            text-align: center;
         }
 
         .loading {
-            color: #666;
-            font-style: italic;
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2rem;
+            color: var(--accent);
             display: none;
+            animation: pulse 1.5s infinite;
         }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Masonry Grid */
+        .results {
+            column-count: 1;
+            column-gap: 20px;
+            margin-top: 20px;
+        }
+
+        @media (min-width: 600px) { .results { column-count: 2; } }
+        @media (min-width: 900px) { .results { column-count: 3; } }
+        @media (min-width: 1200px) { .results { column-count: 4; } }
+
+        .card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            break-inside: avoid;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card:hover {
+            transform: scale(1.03);
+            z-index: 10;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .card img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-content {
+            padding: 16px;
+        }
+
+        .card-score {
+            display: inline-block;
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .card-year {
+            display: inline-block;
+            background: rgba(167, 139, 250, 0.2);
+            color: #a78bfa;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            margin-left: 8px;
+        }
+
+        .card-path {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            word-break: break-all;
+        }
+
     </style>
 </head>
-
 <body>
-    <h1>AI Image Search Tool</h1>
+    <div class="container">
+        <h1>Image Search Tool</h1>
 
-    <div class="controls">
-        <h3>1. Index Images</h3>
-        <input type="text" id="indexDir" placeholder="Enter absolute path to image folder (e.g., C:/Images)">
-        <button onclick="indexImages()">Index Directory</button>
-        <span id="indexStatus"></span>
+        <div class="controls-wrapper">
+            <!-- Panel 1: Indexing -->
+            <div class="panel">
+                <h3>1. Index Database</h3>
+                <input type="text" id="indexDir" placeholder="Path to images (e.g., C:/Images)">
+                <div class="checkbox-container">
+                    <input type="checkbox" id="skipOcr" checked>
+                    <label for="skipOcr">Skip OCR extraction (Much faster)</label>
+                </div>
+                <button onclick="indexImages()">Initial Scan / Update</button>
+                <span id="indexStatus" class="status-text"></span>
+            </div>
+
+            <!-- Panel 2: Semantic Search -->
+            <div class="panel">
+                <h3>2. Search by Text</h3>
+                <input type="text" id="searchQuery" placeholder="e.g., 'A sunny beach', 'Receipts'">
+                
+                <div class="options-row">
+                    <div>
+                        <label>Max Results</label>
+                        <input type="number" id="topKText" value="20" min="1" max="100">
+                    </div>
+                    <div>
+                        <label>Year Filter</label>
+                        <input type="text" id="yearText" placeholder="e.g. 2023">
+                    </div>
+                </div>
+
+                <button onclick="searchImages()">Search Database</button>
+            </div>
+
+            <!-- Panel 3: Reverse Image Search -->
+            <div class="panel">
+                <h3>3. Search by Image</h3>
+                <input type="file" id="imageInput" accept="image/*">
+                
+                <div class="options-row">
+                    <div>
+                        <label>Max Results</label>
+                        <input type="number" id="topKImage" value="20" min="1" max="100">
+                    </div>
+                    <div>
+                        <label>Year Filter</label>
+                        <input type="text" id="yearImage" placeholder="e.g. 2023">
+                    </div>
+                </div>
+
+                <button onclick="searchByImage()">Reverse Search</button>
+            </div>
+        </div>
+
+        <div id="loading" class="loading">Searching Neural Database...</div>
+        <div id="results" class="results"></div>
     </div>
-
-    <div class="controls">
-        <h3>2. Search by Text</h3>
-        <input type="text" id="searchQuery" placeholder="Search (e.g., 'cat', 'receipt', 'invoice #123')">
-        <button onclick="searchImages()">Search</button>
-    </div>
-
-    <div class="controls">
-        <h3>3. Search by Image</h3>
-        <input type="file" id="imageInput" accept="image/*">
-        <button onclick="searchByImage()">Search Image</button>
-    </div>
-
-    <div id="loading" class="loading">Processing...</div>
-    <div id="results" class="results"></div>
 
     <script>
         async function indexImages() {
             const dir = document.getElementById('indexDir').value;
+            const skipOcr = document.getElementById('skipOcr').checked;
             const status = document.getElementById('indexStatus');
 
             if (!dir) { alert('Please enter a directory path'); return; }
 
-            status.textContent = 'Starting...';
+            status.textContent = 'Initializing Database...';
 
             try {
                 const res = await fetch('/index', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ directory: dir })
+                    body: JSON.stringify({ directory: dir, skip_ocr: skipOcr })
                 });
                 const data = await res.json();
                 status.textContent = data.message;
-
-                // Start polling
                 pollStatus();
             } catch (e) {
                 status.textContent = 'Error: ' + e;
@@ -128,20 +328,48 @@
                     const data = await res.json();
 
                     if (data.is_indexing) {
-                        status.textContent = `Indexing... (Current count: ${data.image_count})`;
+                        status.textContent = `Processing... (Indexed: ${data.image_count})`;
                     } else {
-                        status.textContent = `Indexing complete. Total images: ${data.image_count}`;
+                        status.textContent = `Database Active. Total records: ${data.image_count}`;
                         clearInterval(interval);
                     }
                 } catch (e) {
-                    console.error("Polling error", e);
                     clearInterval(interval);
                 }
             }, 1000);
         }
 
+        function renderResults(data, resultsDiv) {
+            resultsDiv.innerHTML = '';
+            if (data.results && data.results.length > 0) {
+                data.results.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    const imgUrl = `/image?path=${encodeURIComponent(item.path)}`;
+                    
+                    let tagsHTML = `<span class="card-score">Match: ${(item.score * 100).toFixed(1)}%</span>`;
+                    if (item.year) {
+                        tagsHTML += `<span class="card-year">${item.year}</span>`;
+                    }
+
+                    card.innerHTML = `
+                        <img src="${imgUrl}" alt="Result" loading="lazy">
+                        <div class="card-content">
+                            ${tagsHTML}
+                            <p class="card-path" title="${item.path}">${item.path.split(/[\\/]/).pop()}</p>
+                        </div>
+                    `;
+                    resultsDiv.appendChild(card);
+                });
+            } else {
+                resultsDiv.innerHTML = '<p style="text-align:center; color: #94a3b8; grid-column: 1/-1;">No matching images found in database.</p>';
+            }
+        }
+
         async function searchImages() {
             const query = document.getElementById('searchQuery').value;
+            const topK = document.getElementById('topKText').value;
+            const year = document.getElementById('yearText').value;
             const resultsDiv = document.getElementById('results');
             const loading = document.getElementById('loading');
 
@@ -151,26 +379,14 @@
             resultsDiv.innerHTML = '';
 
             try {
-                const res = await fetch(`/search?query=${encodeURIComponent(query)}`);
+                let url = `/search?query=${encodeURIComponent(query)}&top_k=${topK}`;
+                if (year) url += `&year=${encodeURIComponent(year)}`;
+                
+                const res = await fetch(url);
                 const data = await res.json();
-
-                if (data.results && data.results.length > 0) {
-                    data.results.forEach(item => {
-                        const card = document.createElement('div');
-                        card.className = 'card';
-                        const imgUrl = `/image?path=${encodeURIComponent(item.path)}`;
-                        card.innerHTML = `
-                            <img src="${imgUrl}" alt="Result">
-                            <p>Score: ${item.score.toFixed(4)}</p>
-                            <p title="${item.path}">${item.path.split(/[\\/]/).pop()}</p>
-                        `;
-                        resultsDiv.appendChild(card);
-                    });
-                } else {
-                    resultsDiv.innerHTML = '<p>No results found.</p>';
-                }
+                renderResults(data, resultsDiv);
             } catch (e) {
-                resultsDiv.innerHTML = '<p>Error searching.</p>';
+                resultsDiv.innerHTML = '<p>Error querying database.</p>';
             } finally {
                 loading.style.display = 'none';
             }
@@ -178,10 +394,12 @@
 
         async function searchByImage() {
             const fileInput = document.getElementById('imageInput');
+            const topK = document.getElementById('topKImage').value;
+            const year = document.getElementById('yearImage').value;
             const resultsDiv = document.getElementById('results');
             const loading = document.getElementById('loading');
 
-            if (fileInput.files.length === 0) { alert('Please select an image'); return; }
+            if (fileInput.files.length === 0) { alert('Please select an image to reverse search'); return; }
 
             loading.style.display = 'block';
             resultsDiv.innerHTML = '';
@@ -189,35 +407,32 @@
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
 
+            let url = `/search_image?top_k=${topK}`;
+            if (year) url += `&year=${encodeURIComponent(year)}`;
+
             try {
-                const res = await fetch('/search_image', {
+                const res = await fetch(url, {
                     method: 'POST',
                     body: formData
                 });
                 const data = await res.json();
-
-                if (data.results && data.results.length > 0) {
-                    data.results.forEach(item => {
-                        const card = document.createElement('div');
-                        card.className = 'card';
-                        const imgUrl = `/image?path=${encodeURIComponent(item.path)}`;
-                        card.innerHTML = `
-                            <img src="${imgUrl}" alt="Result">
-                            <p>Score: ${item.score.toFixed(4)}</p>
-                            <p title="${item.path}">${item.path.split(/[\\/]/).pop()}</p>
-                        `;
-                        resultsDiv.appendChild(card);
-                    });
-                } else {
-                    resultsDiv.innerHTML = '<p>No results found.</p>';
-                }
+                renderResults(data, resultsDiv);
             } catch (e) {
                 resultsDiv.innerHTML = '<p>Error searching by image.</p>';
             } finally {
                 loading.style.display = 'none';
             }
         }
+
+        // Initialize status on load
+        fetch('/status')
+            .then(r => r.json())
+            .then(data => {
+                if (!data.is_indexing && data.image_count >= 0) {
+                    document.getElementById('indexStatus').textContent = `Database Active. Total records: ${data.image_count}`;
+                }
+            })
+            .catch(e => console.log(e));
     </script>
 </body>
-
 </html>
