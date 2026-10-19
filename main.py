@@ -8,6 +8,7 @@ from typing import Optional
 
 from fastapi import BackgroundTasks, Depends, FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel
 from PIL import Image
@@ -193,4 +194,4 @@ async def get_image(path: str = Query(..., min_length=1, max_length=4096)):
 
 
 static_dir = Path(__file__).resolve().parent / "static"
-app.mount("/", __import__("fastapi").staticfiles.StaticFiles(directory=str(static_dir), html=True), name="static")
+app.mount("/", StaticFiles(directory=str(static_dir), html=True), name="static")
