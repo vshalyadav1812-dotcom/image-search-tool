@@ -67,6 +67,8 @@
       img.src = blobUrl;
     } catch (_) {
       img.alt = "Image unavailable";
+    } finally {
+      delete img.dataset.authLoading;
     }
   }
 
